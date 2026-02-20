@@ -1,6 +1,9 @@
 #include "scpi.h"
 
+#include <stdio.h>
+
 ViStatus scpi_write(ViSession device, ViConstString command) {
+    printf("Sending %s\n", command);
     return viPrintf(device, command);
 }
 
