@@ -1,34 +1,38 @@
-#include "DSO2000.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "DSO2000.h"
 #include "scpi.h"
 
-/**
-Enable or disable 20MHz bandwidth limit
-Acts as 20MHz low-pass filter
-@param device Device connection session handle
-@param channelN Channel number
-@param limit Limit on or off
-*/
+/// <summary>
+/// Boolean strings
+/// </summary>
+char* boolstr[] = { "OFF", "ON" };
+
+/// <summary>
+/// Enable or disable 20MHz bandwidth limit of the specified channel.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <param name="limit">Bandwith limit status</param>
 void setBandwidthLimit(ViSession device, int channelN, DSO_BOOL limit) {
 	char command[PACKET_SIZE];
-	snprintf(command, PACKET_SIZE, ":CHAN%d:BWL %d\n", channelN, (int)limit);
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:BWL %s\n", channelN, boolstr[limit]);
 	scpi_write(device, command);
 }
 
-/**
-Query 20MHz bandwidth limit status
-Acts as 20MHz low-pass filter
-@param device device connection session handle
-@param channelN channel number
-*/
+/// <summary>
+/// Query 20MHz bandwidth limit status of the specified channel.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <returns>Bandwith limit status</returns>
 DSO_BOOL getBandwithlimit(ViSession device, int channelN) {
+	char command[PACKET_SIZE];
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:BWL?\n", channelN);
 	ViPBuf read_buffer[PACKET_SIZE];
 	size_t bytes_read = 0;
-	char command[PACKET_SIZE];
-	snprintf(command, PACKET_SIZE, ":CHAN%d:BWL? \n", channelN);
 	scpi_write_and_read(device, command, read_buffer, PACKET_SIZE, bytes_read);
 	read_buffer[bytes_read] = '\0';
 	int status;
@@ -36,16 +40,126 @@ DSO_BOOL getBandwithlimit(ViSession device, int channelN) {
 	return (DSO_BOOL)status;
 }
 
-/**
-First call to 
-*/
+/// <summary>
+/// Used by
+/// <see cref="setCoupling"/>
+/// and
+/// <see cref="getCoupling"/>
+/// </summary>
+char* modes[] = { "AC", "DC", "GND" };
+
+/// <summary>
+/// Set the connection of the specified channel signal.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <param name="mode">Coupling mode</param>
+void setCoupling(ViSession device, int channelN, DSO_COUPLING mode) {
+	char command[PACKET_SIZE];
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:COUP %s\n", channelN, modes[(int)mode]);
+	scpi_write(device, command);
+}
+
+/// <summary>
+/// Query the connection of the specified channel signal.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <returns>Coupling mode</returns>
+DSO_COUPLING getCoupling(ViSession device, int channelN) {
+	char command[PACKET_SIZE];
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:COUP?\n", channelN);
+	ViPBuf read_buffer[PACKET_SIZE];
+	size_t bytes_read = 0;
+	scpi_write_and_read(device, command, read_buffer, PACKET_SIZE, bytes_read);
+	read_buffer[bytes_read] = '\0';
+	for (size_t i = 0; i < sizeof(modes); i++) {
+		if (strcmp(read_buffer, modes[i]) == 0) return (DSO_COUPLING)i;
+	}
+	return (DSO_COUPLING)-1;
+}
+
+/// <summary>
+/// Enable or disable the specified channel.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <param name="enabled">Enabled status</param>
+void setChannelEnabled(ViSession device, int channelN, DSO_BOOL enabled) {
+	char command[PACKET_SIZE];
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:DISP %s\n", channelN, boolstr[enabled]);
+	scpi_write(device, command);
+}
+
+/// <summary>
+/// Query enabled status of the specified channel.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <returns>Enabled status</returns>
+DSO_BOOL getChannelEnabled(ViSession device, int channelN) {
+	char command[PACKET_SIZE];
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:DISP?\n", channelN);
+	ViPBuf read_buffer[PACKET_SIZE];
+	size_t bytes_read = 0;
+	scpi_write_and_read(device, command, read_buffer, PACKET_SIZE, bytes_read);
+	read_buffer[bytes_read] = '\0';
+	int status;
+	(void)sscanf(read_buffer, "%d", &status);
+	return (DSO_BOOL)status;
+}
+
+
+/// <summary>
+/// Set inversion the specified channel.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <param name="inverted">Inverted status</param>
+void setChannelInvert(ViSession device, int channelN, DSO_BOOL inverted) {
+	char command[PACKET_SIZE];
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:INV %s\n", channelN, boolstr[inverted]);
+	scpi_write(device, command);
+}
+
+/// <summary>
+/// Query inverted status of the specified channel.
+/// </summary>
+/// <param name="device">Device connection session handle</param>
+/// <param name="channelN">Channel number</param>
+/// <returns>Inverted status</returns>
+DSO_BOOL getChannelInvert(ViSession device, int channelN) {
+	char command[PACKET_SIZE];
+	snprintf(command, PACKET_SIZE, ":CHANnel%d:INV?\n", channelN);
+	ViPBuf read_buffer[PACKET_SIZE];
+	size_t bytes_read = 0;
+	scpi_write_and_read(device, command, read_buffer, PACKET_SIZE, bytes_read);
+	read_buffer[bytes_read] = '\0';
+	int status;
+	(void)sscanf(read_buffer, "%d", &status);
+	return (DSO_BOOL)status;
+}
+
+/// <summary>
+/// Used by
+/// <see cref="setCoupling"/>
+/// and
+/// <see cref="getCoupling"/>
+/// </summary>
+char* offset_suffix[] = { "V", "mV" };
+
+/// <summary>
+/// Parse waveform data header of first <c>:WAV:DATA:ALL?</c> call
+/// </summary>
+/// <param name="bytes">Raw data</param>
+/// <param name="header">Pointer to header</param>
 void readDataHeader(void *bytes, WaveformDataHeader* header) {
 	char *data = (char*)bytes;
 	if (data[0] != '#' || data[1] != '9') {
 		printf("invalid header %c%c\n", data[0], data[1]);
 	}
-	(void)sscanf(data +   2, "%9llu", &header->header.dataLength);
-	(void)sscanf(data +  11, "%9llu", &header->header.byteLength);
+	(void)sscanf(data +   2, "%9llu", &header->header.thisBytes);
+	(void)sscanf(data +  11, "%9llu", &header->header.totalBytes);
 	(void)sscanf(data +  20, "%9llu", &header->header.bytesTransmitted);
 	(void)sscanf(data +  29,   "%1d", &header->running);
 	(void)sscanf(data +  30,   "%1d", &header->trigger);
@@ -72,33 +186,39 @@ void readDataHeader(void *bytes, WaveformDataHeader* header) {
 	header->voltageC4 = (header->voltageC4 / 12) / 1e-317;
 }
 
+/// <summary>
+/// Print waveform data header to stdout
+/// </summary>
+/// <param name="header">Pointer to header</param>
 void printDataHeader(WaveformDataHeader* header) {
-	printf("Header length:     %llu\n", header->header.dataLength);
-	printf("Header bytes:      %llu\n", header->header.byteLength);
-	printf("Transmitted:       %llu\n", header->header.bytesTransmitted);
-	printf("\n");
-	printf("Running:           %d\n", header->running);
-	printf("Trigger:           %d\n", header->trigger);
-	printf("\n");
-	printf("C1 enabled:        %d\n", header->enabledC1);
-	printf("C1 voltage:        %e\n", header->voltageC1);
-	printf("C1 offset:         %hd\n", header->offsetC1);
-	printf("\n");
-	printf("C2 enabled:        %d\n", header->enabledC2);
-	printf("C2 voltage:        %e\n", header->voltageC2);
-	printf("C2 offset:         %hd\n", header->offsetC2);
-	printf("\n");
-	printf("C3 enabled:        %d\n", header->enabledC3);
-	printf("C3 voltage:        %e\n", header->voltageC3);
-	printf("C3 offset:         %hd\n", header->offsetC3);
-	printf("\n");
-	printf("C4 enabled:        %d\n", header->enabledC4);
-	printf("C4 voltage:        %e\n", header->voltageC4);
-	printf("C4 offset:         %hd\n", header->offsetC4);
-	printf("\n");
-	printf("Sample rate:       %e\n", header->sampleRate);
-	printf("Sample multiplier: %u\n", header->sampleMultiple);
-	printf("Trigger time:      %e\n", header->triggerTime);
-	printf("Start time:        %e\n", header->startTime);
+	printf("Header length: %llu\n", header->header.thisBytes);
+	printf("Total data:    %llu\n", header->header.totalBytes);
+	printf("Transmitted:   %llu\n", header->header.bytesTransmitted);
+	printf("Running:       %d\n", header->running);
+	printf("Trigger:       %d\n", header->trigger);
+	printf("Channel 1 (%s)\n  volts/bit: %e\n  offset:    %hd\n",
+		header->enabledC1 ? "enabled" : "disabled",
+		header->voltageC1,
+		header->offsetC1
+	);
+	printf("Channel 2 (%s)\n  volts/bit: %e\n  offset:    %hd\n",
+		header->enabledC2 ? "enabled" : "disabled",
+		header->voltageC2,
+		header->offsetC2
+	);
+	printf("Channel 3 (%s)\n  volts/bit: %e\n  offset:    %hd\n",
+		header->enabledC3 ? "enabled" : "disabled",
+		header->voltageC3,
+		header->offsetC3
+	);
+	printf("Channel 4 (%s)\n  volts/bit: %e\n  offset:    %hd\n",
+		header->enabledC4 ? "enabled" : "disabled",
+		header->voltageC4,
+		header->offsetC4
+	);
+	printf("Sample rate multiplier: %u\n", header->sampleMultiple);
+	printf("Sample rate:  %e\n", header->sampleRate);
+	printf("Trigger time: %e\n", header->triggerTime);
+	printf("Start time:   %e\n", header->startTime);
 	printf("\n");
 }

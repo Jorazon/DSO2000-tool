@@ -16,50 +16,60 @@ typedef enum dso_bool {
 void setBandwidthLimit(ViSession device, int channelN, DSO_BOOL limit);
 DSO_BOOL getBandwithlimit(ViSession device, int channelN);
 
-/**
-* Used for on/off commands
-*/
+/// <summary>
+/// Channel connection coupling modes
+/// </summary>
 typedef enum dso_coupling{
-	AC,
-	DC,
-	GND
+	AC, /// The DC component of the signal under test is blocked.
+	DC, /// Both the DC and AC components of the signal under test can pass.
+	GND, /// Both the DC and AC components of the signal under test are blocked
+	ERROR = -1 /// An error occurred.
 } DSO_COUPLING;
 
+void setCoupling(ViSession device, int channelN, DSO_COUPLING mode);
+DSO_COUPLING getCoupling(ViSession device, int channelN);
+
+/// <summary>
+/// SCPI bulk data header
+/// </summary>
 typedef struct scpi_header{
-	size_t dataLength;
-	size_t byteLength;
-	size_t bytesTransmitted;
+	size_t thisBytes; /// Length of this packet
+	size_t totalBytes; /// Total data length
+	size_t bytesTransmitted; /// Bytes already received
 } SCPIHeader;
 
 typedef struct wav_header{
-	SCPIHeader header;
-	int running;
-	int trigger;
-	int offsetC1;
-	int offsetC2;
-	int offsetC3;
-	int offsetC4;
-	double voltageC1;
-	double voltageC2;
-	double voltageC3;
-	double voltageC4;
-	int enabledC1;
-	int enabledC2;
-	int enabledC3;
-	int enabledC4;
-	double sampleRate;
-	int sampleMultiple;
-	double triggerTime;
-	double startTime;
+	SCPIHeader header; /// SCPI header
+	int running; /// Is running
+	int trigger; /// Ready to trigger
+	int offsetC1; /// Channel 1 sample offset
+	int offsetC2; /// Channel 2 sample offset
+	int offsetC3; /// Channel 3 sample offset
+	int offsetC4; /// Channel 4 sample offset
+	double voltageC1; /// Channel 1 denormalized volts/sample
+	double voltageC2; /// Channel 2 denormalized volts/sample
+	double voltageC3; /// Channel 3 denormalized volts/sample
+	double voltageC4; /// Channel 4 denormalized volts/sample
+	int enabledC1; /// Channel 1 enabled
+	int enabledC2; /// Channel 2 enabled
+	int enabledC3; /// Channel 3 enabled
+	int enabledC4; /// Channel 4 enabled
+	double sampleRate; /// Samples/s
+	int sampleMultiple; /// Sample rate multiplier
+	double triggerTime; /// Trigger offset from center
+	double startTime; /// Data packet offset from start
 } WaveformDataHeader;
 
 typedef struct wav_data{
-	SCPIHeader header;
-	void* data;
+	SCPIHeader header; /// SCPI header
+	size_t dataLength; /// Packet data length
+	int8_t* data; /// Raw samples
 } WaveformDataPacket;
 
 void readDataHeader(void *bytes, WaveformDataHeader* header);
 void printDataHeader(WaveformDataHeader* header);
+
+void setChannelInvert(ViSession device, int channelN, DSO_BOOL inverted);
 
 typedef enum {
 	D_4K   = 4000,
