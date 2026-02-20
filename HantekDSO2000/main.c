@@ -142,32 +142,40 @@ int main(int argc, const char* argv[]) {
     else {
         printf("Read error: 0x%08x\n", status);
     }
-    char wav_header[128];
-    scpi_write(instr, ":WAV:DATA:ALL?\n");
-    scpi_read(instr, wav_header, sizeof(wav_header), &count);
-    //print_bytes(":WAV:DATA:ALL? response", wav_header, count);
 
-    WaveformDataHeader header;
-    readDataHeader(wav_header, &header);
-    //printDataHeader(&header);
+    WaveformDataHeader dataHeader;
+    do {
+        char wav_header[128];
+        scpi_write(instr, ":WAV:DATA:ALL?\n");
+        scpi_read(instr, wav_header, sizeof(wav_header), &count);
+        //print_bytes(":WAV:DATA:ALL? response", wav_header, count);
+        readDataHeader(wav_header, &dataHeader);
+        //printDataHeader(&dataHeader);
+    } while (dataHeader.header.thisBytes != 128);
 
     FILE *csv = fopen("data.csv", "w");
-
     fprintf(csv, "Time_s,Volt_V\n");
-    double sPerSample = 1.0 / header.sampleRate * header.sampleMultiple;
 
-    char wave_data[4100];
+    ViPBuf wave_data = (ViPByte)malloc(4100);
+    if (!wave_data) {
+        printf("fuck");
+        return -1;
+    }
+    WaveformDataPacket packet;
+    packet.data = &wave_data[29];
+    double sPerSample = 1.0 / dataHeader.sampleRate * dataHeader.sampleMultiple;
     for (size_t i = 0; i < 2; i++) {
-        memset(wave_data, 0x00, sizeof(wave_data));
+        memset(wave_data, 0x00, 4100);
         scpi_write(instr, ":WAV:DATA:ALL?\n");
-        scpi_read(instr, wave_data, sizeof(wave_data), &count);
-        for (size_t j = 29; j < count; j++) {
+        scpi_read(instr, wave_data, 4100, &count);
+        packet.dataLength = count - 30;
+        for (size_t j = 0; j < packet.dataLength; j++) {
             fprintf(csv, "%le,%le\n",
-                sPerSample * (double)(j - 29),
-                header.voltageC1 * (double)((int8_t)wave_data[j] - header.offsetC1 - 2)
+                sPerSample * (double)j,
+                dataHeader.voltageC1 * (double)(packet.data[j] - dataHeader.offsetC1 - 2)
             );
         }
-        print_bytes(":WAV:DATA:ALL? response", wave_data, count);
+        //print_bytes(":WAV:DATA:ALL? response", wave_data, count);
     }
 
     viClose(instr);
